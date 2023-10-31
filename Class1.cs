@@ -3,14 +3,11 @@ using System.IO.Ports;
 using System;
 using System.Linq;
 using static WindowsFormsApp1.TP5510;
-using System.Threading.Tasks;
-using System.Runtime.ConstrainedExecution;
-using System.Threading;
-using static System.Windows.Forms.LinkLabel;
 
 public class SerialPortManager
 {
     private static SerialPortManager instance;
+    public static int ReadTimeout { get; set; } = 200;
 
     private SerialPortManager()
     {
@@ -27,6 +24,11 @@ public class SerialPortManager
             }
             return instance;
         }
+    }
+
+    public void SetReadTimeout(int timeout)
+    {
+        ReadTimeout = timeout;
     }
 
     public SerialPort serialPort;
@@ -58,16 +60,7 @@ public class SerialPortManager
         }
         if (SharedForms.Form4Instance != null && !SharedForms.Form4Instance.IsDisposed)
         {
-            // 将项添加到Form4的listbox1
             SharedForms.Form4Instance.AddItemsToListBox(ComboBoxItems);
-        }
-        if (serialPort.IsOpen)
-        {
-            //Console.WriteLine("串口已打开");
-        }
-        else
-        {
-            //Console.WriteLine("串口未打开");
         }
     }
 
@@ -127,11 +120,12 @@ public class SerialPortManager
     {
         if (serialPort != null && serialPort.IsOpen)
         {
+            string line = null;
             try
             {
                 serialPort.DataReceived -= DataReceivedHandler;
-                serialPort.ReadTimeout = 200;  // 设置 5 秒的读取超时
-                string line = serialPort.ReadLine();
+                serialPort.ReadTimeout = ReadTimeout;
+                line = serialPort.ReadLine();
                 //Console.WriteLine(line);
                 serialPort.DataReceived += DataReceivedHandler;
                 lastStatusCode = 1;
@@ -139,15 +133,18 @@ public class SerialPortManager
             }
             catch (TimeoutException)
             {
-                serialPort.DataReceived += DataReceivedHandler;
-                lastStatusCode = 2;
-                return "TIME OUT";
-            }
-            catch (Exception ex)
-            {
-                serialPort.DataReceived += DataReceivedHandler;
-                lastStatusCode = 2;
-                return "Error: " + ex.Message;
+                if (line == null)
+                {
+                    serialPort.DataReceived += DataReceivedHandler;
+                    lastStatusCode = 2;
+                    return "TIME OUT";
+                }
+                else
+                {
+                    serialPort.DataReceived += DataReceivedHandler;
+                    lastStatusCode = 1;
+                    return line;
+                }
             }
         }
         else

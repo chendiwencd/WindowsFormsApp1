@@ -37,15 +37,20 @@ namespace WindowsFormsApp1
             this.MinimizeBox = false;
 
             string[] ArryPort = SerialPort.GetPortNames();
-            for (int i = 0; i < ArryPort.Length; i++)
+            if (ArryPort != null) 
             {
-                comboBox5.Items.Add(ArryPort[i]);
-                comboBox5.SelectedIndex = 0;
+                for (int i = 0; i < ArryPort.Length; i++)
+                {
+                    comboBox5.Items.Add(ArryPort[i]);
+                    comboBox5.SelectedIndex = 0;
+                }
             }
-
             this.comboBox13.Items.AddRange(new string[] {"9600", "1200", "2400", "4800","19200", "38400", "57600", "115200"});
             this.comboBox15.Items.AddRange(new string[] { "None", "Even", "Odd" });
             this.comboBox16.Items.AddRange(new string[] { "1", "2" });
+            this.comboBox8.Items.AddRange(new string[] { "9600", "1200", "2400", "4800", "19200", "38400", "57600", "115200" });
+            this.comboBox7.Items.AddRange(new string[] { "None", "Even", "Odd" });
+            this.comboBox2.Items.AddRange(new string[] { "1", "2" });
             this.comboBox3.Items.AddRange(new string[] { "9600", "1200", "2400", "4800", "19200", "38400", "57600", "115200" });
             this.comboBox4.Items.AddRange(new string[] { "None", "Even", "Odd" });
             this.comboBox6.Items.AddRange(new string[] { "1", "2" });
@@ -53,6 +58,9 @@ namespace WindowsFormsApp1
             comboBox5.SelectedIndex = 0;
             comboBox1.SelectedIndex = 0;
             comboBox13.SelectedIndex = 0;
+            comboBox8.SelectedIndex = 0;
+            comboBox7.SelectedIndex = 0;
+            comboBox2.SelectedIndex = 0;
             comboBox15.SelectedIndex = 0;
             comboBox16.SelectedIndex = 0;
             comboBox3.SelectedIndex = 0;
@@ -109,6 +117,7 @@ namespace WindowsFormsApp1
         }
         private void button4_Click(object sender, EventArgs e)
         {
+            button4.Enabled = false;
             List<string> ports = new List<string>();
             // 添加combobox5的项
             ports.Add(comboBox5.SelectedItem.ToString());
@@ -126,9 +135,15 @@ namespace WindowsFormsApp1
                 button4.Text = "关闭串口";
                 SetControlsEnabled(true);
                 comboBox5.BackColor = ColorTranslator.FromHtml("#8d9e59");
+                if (ports[1] == "1200" || ports[1] == "2400")
+                {
+                    int newTimeoutValue = 1000;
+                    SerialPortManager.Instance.SetReadTimeout(newTimeoutValue);
+                }
                 SerialPortManager.Instance.OpenPort(ports);
                 SerialPortManager.Instance.SendCommands("AT+EUI?");
                 label9.Text = SerialPortManager.Instance.ReadLineFromPort();
+                SerialPortManager.Instance.ReadLineFromPort();
             }
             else if (button4.Text == "关闭串口")
             {
@@ -138,47 +153,81 @@ namespace WindowsFormsApp1
                 SerialPortManager.Instance.ClosePort();
 
             }
+            button4.Enabled = true;
             get_Message();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            List<string> comboBoxItems = new List<string>();
-            if (radioButton1.Checked)
+            if (!checkBox1.Checked && !checkBox2.Checked)
             {
-                comboBoxItems.Add("3");
-            }
-            else
-            {
-                comboBoxItems.Add("0");
-            }
-            comboBoxItems.Add(comboBox13.SelectedItem.ToString());
-            comboBoxItems.Add("8");
-            comboBoxItems.Add(comboBox15.SelectedItem.ToString() == "None" ? "N" :
-            comboBox15.SelectedItem.ToString() == "Even" ? "E" : comboBox15.SelectedItem.ToString() == "Odd" ? "O" : comboBox15.SelectedItem.ToString());
-            comboBoxItems.Add(comboBox16.SelectedItem.ToString());
-            string outputString = "AT+UART=" + string.Join(",", comboBoxItems);
-            SerialPortManager.Instance.SendCommands(outputString);
-            string line1 = null;
-            if (SerialPortManager.Instance.IsPortOpen())
-            {
-                line1 = SerialPortManager.Instance.ReadLineFromPort();
-            }
-            if (line1 != null && (line1.Contains("OK")))
-            {
-                button1.Text = "配置成功";
-                button4.PerformClick();
-                button4.PerformClick();
+                button1.Text = "串口未选";
                 Task.Delay(1000).GetAwaiter().OnCompleted(() =>
                 {
                     button1.Text = "配置";
                 });
             }
+            button1.Enabled  = false;
+            List<string> comboBoxItems = new List<string>();
+            if (checkBox1.Checked)
+            {
+                comboBoxItems.Add("0");
+                comboBoxItems.Add(comboBox13.SelectedItem.ToString());
+                comboBoxItems.Add("8");
+                comboBoxItems.Add(comboBox15.SelectedItem.ToString() == "None" ? "N" :
+                comboBox15.SelectedItem.ToString() == "Even" ? "E" : comboBox15.SelectedItem.ToString() == "Odd" ? "O" : comboBox15.SelectedItem.ToString());
+                comboBoxItems.Add(comboBox16.SelectedItem.ToString());
+                string outputString = "AT+UART=" + string.Join(",", comboBoxItems);
+                SerialPortManager.Instance.SendCommands(outputString);
+                // Console.WriteLine(outputString);
+                string line1 = null;
+                if (SerialPortManager.Instance.IsPortOpen())
+                {
+                    line1 = SerialPortManager.Instance.ReadLineFromPort();
+                }
+                if (line1 != null && (line1.Contains("OK")))
+                {
+                    button1.Text = "配置成功";
+                    Task.Delay(1000).GetAwaiter().OnCompleted(() =>
+                    {
+                        button1.Text = "配置";
+                    });
+                }
+            }
+            List<string> comboBoxItems1 = new List<string>();
+            if (checkBox2.Checked)
+            {
+                comboBoxItems1.Add("3");
+                comboBoxItems1.Add(comboBox8.SelectedItem.ToString());
+                comboBoxItems1.Add("8");
+                comboBoxItems1.Add(comboBox7.SelectedItem.ToString() == "None" ? "N" :
+                comboBox7.SelectedItem.ToString() == "Even" ? "E" : comboBox7.SelectedItem.ToString() == "Odd" ? "O" : comboBox7.SelectedItem.ToString());
+                comboBoxItems1.Add(comboBox2.SelectedItem.ToString());
+                string outputString = "AT+UART=" + string.Join(",", comboBoxItems1);
+                SerialPortManager.Instance.SendCommands(outputString);
+                // Console.WriteLine(outputString);
+                string line1 = null;
+                if (SerialPortManager.Instance.IsPortOpen())
+                {
+                    line1 = SerialPortManager.Instance.ReadLineFromPort();
+                }
+                if (line1 != null && (line1.Contains("OK")))
+                {
+                    button1.Text = "配置成功";
+                    Task.Delay(1000).GetAwaiter().OnCompleted(() =>
+                    {
+                        button1.Text = "配置";
+                    });
+                }
+            }
+            
+            button1.Enabled = true;
             get_Message();
         }
 
         private void button5_Click(object sender, EventArgs e)
         {
+            button5.Enabled = false;
             for (int i = 0; i < 16; i++)
             {
                 string comboBoxName = "comboBox" + (i + 1); // 构建comboBox的名称
@@ -189,24 +238,23 @@ namespace WindowsFormsApp1
                     comboBox.SelectedIndex = 0; // 将SelectedIndex重置为0
                 }
             }
+            button5.Enabled = true;
             button7_Click(sender, e);
         }
 
         private void button9_Click(object sender, EventArgs e)
         {
+            button9.Enabled = false;
             int selectedIndex = comboBox1.SelectedIndex;
             int cycle = selectedIndex / 50;  
             int offsetInCycle = selectedIndex % 50;  
             int parameterValue = cycle * 50 + (offsetInCycle < 44 ? (offsetInCycle / 4) * 4 : 44);
             string line1 = null;
             string line2 = null;
-            SerialPortManager.Instance.SendCommands("AT+FREQ=DL,"+parameterValue);
+            SerialPortManager.Instance.SendCommands("AT+FREQ=DL," + parameterValue);
             if (SerialPortManager.Instance.IsPortOpen())
             {
                 line1 = SerialPortManager.Instance.ReadLineFromPort();
-            }
-            if (SerialPortManager.Instance.IsPortOpen())
-            {
                 line2 = SerialPortManager.Instance.ReadLineFromPort();
             }
             if (line1 != null && line2 != null && (line1.Contains("OK") || line2.Contains("OK")))
@@ -218,24 +266,28 @@ namespace WindowsFormsApp1
                     button9.Text = "配置";
                 });
             }
+            button9.Enabled =   true;
             get_Message();
         }
 
         private void button7_Click(object sender, EventArgs e)
         {
+            button9.Enabled=false;
             button9.PerformClick();
             button1.PerformClick();
+            button9.Enabled = true;
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            SerialPortManager.Instance.SendCommands("AT+FREQ?");
             if (SerialPortManager.Instance.IsPortOpen())
             {
+                SerialPortManager.Instance.SendCommands("AT+FREQ?");
+                button2.Enabled = false;
                 List<string> lines = SerialPortManager.Instance.ReadLinesFromPort();
                 foreach (string line in lines)
                 {
-                    string pattern = @"UL:(.*)0MHz";
+                    string pattern = @"DL:(.*)0MHz";
                     Match match = Regex.Match(line, pattern);
                     if (match.Success)
                     {
@@ -255,6 +307,7 @@ namespace WindowsFormsApp1
                         }
                     }
                 }
+                button2.Enabled = true;
             }
             get_Message();
          }
@@ -312,15 +365,15 @@ namespace WindowsFormsApp1
 
         private void button8_Click(object sender, EventArgs e)
         {
-            SerialPortManager.Instance.SendCommands("AT+UART?");
+            button8.Enabled = false;
             if (SerialPortManager.Instance.IsPortOpen())
             {
+                SerialPortManager.Instance.SendCommands("AT+UART?");
                 string line1 = SerialPortManager.Instance.ReadLineFromPort();
                 string line2 = SerialPortManager.Instance.ReadLineFromPort();
                 string line3 = SerialPortManager.Instance.ReadLineFromPort();
                 string line4 = SerialPortManager.Instance.ReadLineFromPort();
                 List<string> lines = new List<string> { line1, line2, line3, line4 };
-                Console.WriteLine(lines);
                 List<string> dataList1 = new List<string>();
                 List<string> dataList2 = new List<string>();
                 string pattern = @"RS(\d+): baud: (.*?),\s*dataBit: (\d+),\s*check: (.*?),\s*stop: (\d+)";
@@ -349,11 +402,11 @@ namespace WindowsFormsApp1
                         }
                     }
                 }
-                if (radioButton2.Checked && dataList1.Count >= 4)
+                if (dataList1.Count >= 4)
                 {
                     // 从 dataList1 获取数据
                     string data1 = dataList1[0].Replace(" ", "");
-                    string data3 = dataList1[1];
+                    string data3 = dataList1[2];
                     string data4 = dataList1[3];
 
                     // 找到并选择 comboBox13 中的匹配项
@@ -364,7 +417,8 @@ namespace WindowsFormsApp1
                     }
 
                     // 找到并选择 comboBox15 中的匹配项
-                    int index15 = comboBox15.FindString(data3);
+                    string targetString = data3 == "N" ? "None" : data3 == "E" ? "Even" : data3 == "O" ? "Odd" : "";
+                    int index15 = comboBox15.FindString(targetString);
                     if (index15 != -1)
                     {
                         comboBox15.SelectedIndex = index15;
@@ -382,25 +436,26 @@ namespace WindowsFormsApp1
                         button8.Text = "查询";
                     });
                 }
-                if (radioButton1.Checked && dataList1.Count >= 4)
+                if (dataList1.Count >= 4)
                 {
                     string data1 = dataList2[0].Replace(" ", "");
-                    string data3 = dataList2[1];
+                    string data3 = dataList2[2];
                     string data4 = dataList2[3];
-                    int index13 = comboBox13.FindString(data1);
+                    int index13 = comboBox8.FindString(data1);
                     if (index13 != -1)
                     {
-                        comboBox13.SelectedIndex = index13;
+                        comboBox8.SelectedIndex = index13;
                     }
-                    int index15 = comboBox15.FindString(data3);
+                    string targetString = data3 == "N" ? "None" : data3 == "E" ? "Even" : data3 == "O" ? "Odd" : "";
+                    int index15 = comboBox7.FindString(targetString);
                     if (index15 != -1)
                     {
-                        comboBox15.SelectedIndex = index15;
+                        comboBox7.SelectedIndex = index15;
                     }
-                    int index16 = comboBox16.FindString(data4);
+                    int index16 = comboBox2.FindString(data4);
                     if (index16 != -1)
                     {
-                        comboBox16.SelectedIndex = index16;
+                        comboBox2.SelectedIndex = index16;
                     }
                     button8.Text = "查询成功";
                     Task.Delay(1000).GetAwaiter().OnCompleted(() =>
@@ -410,6 +465,7 @@ namespace WindowsFormsApp1
                 }
                 get_Message();
             }
+            button8.Enabled = true;
         }
         
         private void toolStripMenuItem1_Click_1(object sender, EventArgs e)
@@ -424,6 +480,11 @@ namespace WindowsFormsApp1
                 comboBox5.BackColor = ColorTranslator.FromHtml("#ed6d58");
                 SerialPortManager.Instance.ClosePort();
             }
+        }
+
+        private void Form2_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
